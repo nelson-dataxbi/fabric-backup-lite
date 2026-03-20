@@ -33,7 +33,7 @@ Se conecta a Microsoft Fabric mediante la API REST oficial y permite:
 
 #### Opción A — Descargar el ejecutable
 
-1. Descarga `fbl.exe` desde la sección [**Releases**](https://github.com/wcalcagno/fabric-backup-lite/releases) del repositorio
+1. Descarga `fbl.exe` desde la sección [**Releases**](https://github.com/nelson-dataxbi/fabric-backup-lite/releases) del repositorio
 2. Copia `fbl.exe` a una carpeta en tu PATH (ej. `C:\Tools`)
 3. Verifica la instalación:
 
@@ -320,7 +320,7 @@ It connects to Microsoft Fabric using the official REST API and lets you:
 
 #### Option A — Download the executable
 
-1. Download `fbl.exe` from the [**Releases**](https://github.com/wcalcagno/fabric-backup-lite/releases) section of the repository
+1. Download `fbl.exe` from the [**Releases**](https://github.com/nelson-dataxbi/fabric-backup-lite/releases) section of the repository
 2. Copy `fbl.exe` to a folder on your PATH (e.g. `C:\Tools`)
 3. Verify the installation:
 

@@ -1,0 +1,80 @@
+name: Release fbl CLI
+
+on:
+  push:
+    tags:
+      - "v*-cli"          # e.g. v0.1.0-cli, v1.0.0-cli
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.1.0-cli)"
+        required: true
+
+jobs:
+  release:
+    name: Build and release fbl.exe
+    runs-on: windows-latest
+
+    permissions:
+      contents: write   # needed to create GitHub Releases
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for MinVer
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Publish fbl.exe (self-contained, single file)
+        run: |
+          dotnet publish src/Fabric_backup_lite.Cli/Fabric_backup_lite.Cli.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
+            -o dist/cli
+
+      - name: Get release tag
+        id: tag
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            echo "value=${{ github.event.inputs.tag }}" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "value=${{ github.ref_name }}" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.value }}
+          name: "fbl CLI ${{ steps.tag.outputs.value }}"
+          body: |
+            ## fbl — Fabric Backup Lite CLI
+
+            Descarga `fbl.exe` y cópialo a una carpeta en tu PATH. No requiere instalar .NET.
+
+            **Uso rápido:**
+            ```powershell
+            az login
+            fbl list workspaces
+            fbl backup --workspace MiWorkspace --dest backups/
+            fbl restore --root backups/ --backup latest --workspace MiWorkspace
+            ```
+
+            Consulta el [README del CLI](https://github.com/nelson-dataxbi/fabric-backup-lite/blob/feature/cli/src/Fabric_backup_lite.Cli/README.md) para la guía completa.
+
+            ---
+
+            Download `fbl.exe` and copy it to a folder in your PATH. No .NET installation required.
+
+            See the [CLI README](https://github.com/nelson-dataxbi/fabric-backup-lite/blob/feature/cli/src/Fabric_backup_lite.Cli/README.md) for the full guide.
+          files: dist/cli/fbl.exe
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(steps.tag.outputs.value, '-cli') }}
