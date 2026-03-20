@@ -45,6 +45,8 @@ Expand-Archive fbl-v0.1.1-cli-win-x64.zip -DestinationPath C:\Tools\fbl
 
 3. Verifica la instalación:
 
+> **Nota:** si extraes el zip con el Explorador de Windows en lugar de PowerShell, Windows puede mostrar una alerta de seguridad al ejecutar `fbl.exe` por primera vez. Para ignorarla: clic en **"Más información"** → **"Ejecutar de todas formas"**. El exe es seguro — el código fuente es público en este repositorio.
+
 ```
 fbl --version
 ```
@@ -339,6 +341,8 @@ Expand-Archive fbl-v0.1.1-cli-win-x64.zip -DestinationPath C:\Tools\fbl
 ```
 
 3. Verify the installation:
+
+> **Note:** if you extract the zip using Windows Explorer instead of PowerShell, Windows may show a security warning when running `fbl.exe` for the first time. To bypass it: click **"More info"** → **"Run anyway"**. The executable is safe — the full source code is publicly available in this repository.
 
 ```
 fbl --version
