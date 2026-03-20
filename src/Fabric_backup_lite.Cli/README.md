@@ -33,19 +33,18 @@ Se conecta a Microsoft Fabric mediante la API REST oficial y permite:
 
 #### Opción A — Descargar el ejecutable
 
-1. Descarga `fbl-*-win-x64.zip` desde la sección [**Releases**](https://github.com/nelson-dataxbi/fabric-backup-lite/releases) del repositorio
-2. Extrae con **PowerShell** (importante: no uses el Explorador de Windows):
+1. Descarga `fbl.exe` desde la sección [**Releases**](https://github.com/nelson-dataxbi/fabric-backup-lite/releases) del repositorio y colócalo en una carpeta (ej. `C:\Tools\fbl\`)
+2. Desbloquea y agrega al PATH con **PowerShell**:
 
 ```powershell
-Expand-Archive fbl-v0.1.1-cli-win-x64.zip -DestinationPath C:\Tools\fbl
+# Desbloquear el exe (elimina la alerta de SmartScreen)
+Unblock-File .\fbl.exe
 
-# Agregar al PATH (ejecutar una sola vez)
+# Agregar al PATH (ejecutar una sola vez, ajusta la ruta)
 [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Tools\fbl", "User")
 ```
 
 3. Verifica la instalación:
-
-> **Nota:** si extraes el zip con el Explorador de Windows en lugar de PowerShell, Windows puede mostrar una alerta de seguridad al ejecutar `fbl.exe` por primera vez. Para ignorarla: clic en **"Más información"** → **"Ejecutar de todas formas"**. El exe es seguro — el código fuente es público en este repositorio.
 
 ```
 fbl --version
@@ -330,19 +329,18 @@ It connects to Microsoft Fabric using the official REST API and lets you:
 
 #### Option A — Download the executable
 
-1. Download `fbl-*-win-x64.zip` from the [**Releases**](https://github.com/nelson-dataxbi/fabric-backup-lite/releases) section of the repository
-2. Extract with **PowerShell** (important: do not use Windows Explorer):
+1. Download `fbl.exe` from the [**Releases**](https://github.com/nelson-dataxbi/fabric-backup-lite/releases) section and place it in a folder (e.g. `C:\Tools\fbl\`)
+2. Unblock and add to PATH with **PowerShell**:
 
 ```powershell
-Expand-Archive fbl-v0.1.1-cli-win-x64.zip -DestinationPath C:\Tools\fbl
+# Unblock the exe (removes SmartScreen warning)
+Unblock-File .\fbl.exe
 
-# Add to PATH (run once)
+# Add to PATH (run once, adjust path as needed)
 [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Tools\fbl", "User")
 ```
 
 3. Verify the installation:
-
-> **Note:** if you extract the zip using Windows Explorer instead of PowerShell, Windows may show a security warning when running `fbl.exe` for the first time. To bypass it: click **"More info"** → **"Run anyway"**. The executable is safe — the full source code is publicly available in this repository.
 
 ```
 fbl --version
