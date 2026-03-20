@@ -33,8 +33,16 @@ Se conecta a Microsoft Fabric mediante la API REST oficial y permite:
 
 #### Opción A — Descargar el ejecutable
 
-1. Descarga `fbl.exe` desde la sección [**Releases**](https://github.com/nelson-dataxbi/fabric-backup-lite/releases) del repositorio
-2. Copia `fbl.exe` a una carpeta en tu PATH (ej. `C:\Tools`)
+1. Descarga `fbl-*-win-x64.zip` desde la sección [**Releases**](https://github.com/nelson-dataxbi/fabric-backup-lite/releases) del repositorio
+2. Extrae con **PowerShell** (importante: no uses el Explorador de Windows):
+
+```powershell
+Expand-Archive fbl-v0.1.1-cli-win-x64.zip -DestinationPath C:\Tools\fbl
+
+# Agregar al PATH (ejecutar una sola vez)
+[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Tools\fbl", "User")
+```
+
 3. Verifica la instalación:
 
 ```
@@ -320,8 +328,16 @@ It connects to Microsoft Fabric using the official REST API and lets you:
 
 #### Option A — Download the executable
 
-1. Download `fbl.exe` from the [**Releases**](https://github.com/nelson-dataxbi/fabric-backup-lite/releases) section of the repository
-2. Copy `fbl.exe` to a folder on your PATH (e.g. `C:\Tools`)
+1. Download `fbl-*-win-x64.zip` from the [**Releases**](https://github.com/nelson-dataxbi/fabric-backup-lite/releases) section of the repository
+2. Extract with **PowerShell** (important: do not use Windows Explorer):
+
+```powershell
+Expand-Archive fbl-v0.1.1-cli-win-x64.zip -DestinationPath C:\Tools\fbl
+
+# Add to PATH (run once)
+[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Tools\fbl", "User")
+```
+
 3. Verify the installation:
 
 ```

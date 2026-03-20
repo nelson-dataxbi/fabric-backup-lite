@@ -40,6 +40,12 @@ jobs:
             -p:EnableCompressionInSingleFile=true `
             -o dist/cli
 
+      - name: Package as zip
+        run: |
+          $tag = "${{ steps.tag.outputs.value }}"
+          if (-not $tag) { $tag = "${{ github.ref_name }}" }
+          Compress-Archive -Path dist/cli/fbl.exe -DestinationPath "dist/fbl-$tag-win-x64.zip"
+
       - name: Get release tag
         id: tag
         run: |
@@ -57,9 +63,28 @@ jobs:
           body: |
             ## fbl — Fabric Backup Lite CLI
 
-            Descarga `fbl.exe` y cópialo a una carpeta en tu PATH. No requiere instalar .NET.
+            ### Instalación / Installation
 
-            **Uso rápido:**
+            **Descarga `fbl-${{ steps.tag.outputs.value }}-win-x64.zip` y extrae con PowerShell** (importante: usar PowerShell, no el Explorador de Windows):
+
+            ```powershell
+            # Extraer (reemplaza la ruta según donde descargaste el zip)
+            Expand-Archive fbl-${{ steps.tag.outputs.value }}-win-x64.zip -DestinationPath C:\Tools\fbl
+
+            # Agregar al PATH (opcional, ejecutar una sola vez)
+            [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Tools\fbl", "User")
+            ```
+
+            **Download `fbl-${{ steps.tag.outputs.value }}-win-x64.zip` and extract with PowerShell** (important: use PowerShell, not Windows Explorer):
+
+            ```powershell
+            Expand-Archive fbl-${{ steps.tag.outputs.value }}-win-x64.zip -DestinationPath C:\Tools\fbl
+            [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Tools\fbl", "User")
+            ```
+
+            ---
+
+            **Uso rápido / Quick start:**
             ```powershell
             az login
             fbl list workspaces
@@ -68,13 +93,7 @@ jobs:
             ```
 
             Consulta el [README del CLI](https://github.com/nelson-dataxbi/fabric-backup-lite/blob/feature/cli/src/Fabric_backup_lite.Cli/README.md) para la guía completa.
-
-            ---
-
-            Download `fbl.exe` and copy it to a folder in your PATH. No .NET installation required.
-
-            See the [CLI README](https://github.com/nelson-dataxbi/fabric-backup-lite/blob/feature/cli/src/Fabric_backup_lite.Cli/README.md) for the full guide.
-          files: dist/cli/fbl.exe
+          files: dist/fbl-${{ steps.tag.outputs.value }}-win-x64.zip
           generate_release_notes: true
           draft: false
           prerelease: false
