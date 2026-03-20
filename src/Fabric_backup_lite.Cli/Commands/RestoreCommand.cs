@@ -67,7 +67,8 @@ internal static class RestoreCommand
                 return;
             }
 
-            await using var services = (IAsyncDisposable)Program.BuildServices(configuration, auth, clientId, secret, tenant);
+            var services    = Program.BuildServices(configuration, auth, clientId, secret, tenant);
+            await using var _disposal = (IAsyncDisposable)services;
             var fabricApi   = (IFabricApiClient)services.GetService(typeof(IFabricApiClient))!;
             var restoreSvc  = (IRestoreService)services.GetService(typeof(IRestoreService))!;
 

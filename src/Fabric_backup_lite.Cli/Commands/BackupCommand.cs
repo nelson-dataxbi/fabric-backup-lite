@@ -51,7 +51,8 @@ internal static class BackupCommand
                 return;
             }
 
-            await using var services = (IAsyncDisposable)Program.BuildServices(configuration, auth, clientId, secret, tenant);
+            var services    = Program.BuildServices(configuration, auth, clientId, secret, tenant);
+            await using var _disposal = (IAsyncDisposable)services;
             var fabricApi   = (IFabricApiClient)services.GetService(typeof(IFabricApiClient))!;
             var backupSvc   = (IBackupService)services.GetService(typeof(IBackupService))!;
 
