@@ -1,5 +1,6 @@
 using System.CommandLine;
 using System.Text.Json;
+using Fabric_backup_lite.Core.Models;
 using Fabric_backup_lite.Core.Services;
 using Microsoft.Extensions.Configuration;
 using Serilog;
@@ -19,8 +20,81 @@ internal static class ListCommand
 
         listCommand.AddCommand(CreateWorkspacesSubCommand(configuration, authOption, clientIdOption, clientSecretOption, tenantIdOption));
         listCommand.AddCommand(CreateItemsSubCommand(configuration, authOption, clientIdOption, clientSecretOption, tenantIdOption));
+        listCommand.AddCommand(CreateBackupsSubCommand());
 
         return listCommand;
+    }
+
+    private static Command CreateBackupsSubCommand()
+    {
+        var rootOption   = new Option<string>("--root", "Root folder to search for backups") { IsRequired = true };
+        var outputOption = new Option<string>("--output", getDefaultValue: () => "table", "Output format: table or json");
+
+        var command = new Command("backups", "List available backups under a root folder");
+        command.AddOption(rootOption);
+        command.AddOption(outputOption);
+
+        command.SetHandler(async (context) =>
+        {
+            var root   = context.ParseResult.GetValueForOption(rootOption)!;
+            var output = context.ParseResult.GetValueForOption(outputOption)!;
+            var ct     = context.GetCancellationToken();
+
+            if (!Directory.Exists(root))
+            {
+                Log.Error("Folder not found: {Root}", root);
+                context.ExitCode = 2;
+                return;
+            }
+
+            var opts          = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var manifestPaths = Directory.GetFiles(root, "manifest.json", SearchOption.AllDirectories);
+            var summaries     = new List<(BackupMetadata Meta, string Path)>();
+
+            foreach (var manifestPath in manifestPaths)
+            {
+                ct.ThrowIfCancellationRequested();
+                try
+                {
+                    var json     = await File.ReadAllTextAsync(manifestPath, ct);
+                    var metadata = JsonSerializer.Deserialize<BackupMetadata>(json, opts);
+                    if (metadata is null) continue;
+                    summaries.Add((metadata, Path.GetDirectoryName(manifestPath)!));
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning("Could not parse manifest at {Path}: {Msg}", manifestPath, ex.Message);
+                }
+            }
+
+            summaries.Sort((a, b) => b.Meta.Timestamp.CompareTo(a.Meta.Timestamp));
+
+            if (output.Equals("json", StringComparison.OrdinalIgnoreCase))
+            {
+                var result = summaries.Select((s, i) => new
+                {
+                    index     = i + 1,
+                    workspace = s.Meta.WorkspaceName,
+                    date      = s.Meta.Timestamp,
+                    items     = s.Meta.Items.Count,
+                    path      = s.Path
+                });
+                Console.WriteLine(JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
+            }
+            else
+            {
+                Console.WriteLine($"{"#",-3}  {"Workspace",-30}  {"Date",-19}  {"Items",5}");
+                Console.WriteLine(new string('-', 68));
+                for (int i = 0; i < summaries.Count; i++)
+                {
+                    var s = summaries[i];
+                    Console.WriteLine($"{i + 1,-3}  {s.Meta.WorkspaceName,-30}  {s.Meta.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),-19}  {s.Meta.Items.Count,5}");
+                }
+                Console.WriteLine($"\n{summaries.Count} backup(s) found.");
+            }
+        });
+
+        return command;
     }
 
     private static Command CreateWorkspacesSubCommand(

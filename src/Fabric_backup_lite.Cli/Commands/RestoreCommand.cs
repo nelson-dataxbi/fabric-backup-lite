@@ -15,7 +15,9 @@ internal static class RestoreCommand
         Option<string?> clientSecretOption,
         Option<string?> tenantIdOption)
     {
-        var sourceOption       = new Option<string>("--source", "Path to backup folder (containing manifest.json)") { IsRequired = true };
+        var sourceOption       = new Option<string?>("--source", "Path to backup folder (containing manifest.json)");
+        var rootOption         = new Option<string?>("--root", "Root folder to discover backups (use with --backup)");
+        var backupOption       = new Option<string?>("--backup", "Backup to restore: numeric index from 'fbl list backups', or 'latest'");
         var workspaceOption    = new Option<string?>("--workspace", "Target workspace name or GUID");
         var newWorkspaceOption = new Option<string?>("--new-workspace", "Name for a new workspace to create");
         var capacityOption     = new Option<string?>("--capacity", "Fabric capacity ID (required with --new-workspace)");
@@ -23,6 +25,8 @@ internal static class RestoreCommand
 
         var command = new Command("restore", "Restore Fabric items from a local backup folder");
         command.AddOption(sourceOption);
+        command.AddOption(rootOption);
+        command.AddOption(backupOption);
         command.AddOption(workspaceOption);
         command.AddOption(newWorkspaceOption);
         command.AddOption(capacityOption);
@@ -34,12 +38,43 @@ internal static class RestoreCommand
             var clientId       = context.ParseResult.GetValueForOption(clientIdOption);
             var secret         = context.ParseResult.GetValueForOption(clientSecretOption);
             var tenant         = context.ParseResult.GetValueForOption(tenantIdOption);
-            var source         = context.ParseResult.GetValueForOption(sourceOption)!;
+            var source         = context.ParseResult.GetValueForOption(sourceOption);
+            var root           = context.ParseResult.GetValueForOption(rootOption);
+            var backup         = context.ParseResult.GetValueForOption(backupOption);
             var workspace      = context.ParseResult.GetValueForOption(workspaceOption);
             var newWorkspace   = context.ParseResult.GetValueForOption(newWorkspaceOption);
             var capacity       = context.ParseResult.GetValueForOption(capacityOption);
             var itemTypes      = context.ParseResult.GetValueForOption(itemTypesOption);
             var ct             = context.GetCancellationToken();
+
+            // Validate source specification
+            bool hasSource     = !string.IsNullOrEmpty(source);
+            bool hasRootBackup = !string.IsNullOrEmpty(root) && !string.IsNullOrEmpty(backup);
+
+            if (!hasSource && !hasRootBackup)
+            {
+                Log.Error("Specify either --source <path> or --root <path> --backup <n|latest>.");
+                context.ExitCode = 2;
+                return;
+            }
+            if (hasSource && (!string.IsNullOrEmpty(root) || !string.IsNullOrEmpty(backup)))
+            {
+                Log.Error("--source cannot be combined with --root/--backup.");
+                context.ExitCode = 2;
+                return;
+            }
+            if (!string.IsNullOrEmpty(root) && string.IsNullOrEmpty(backup))
+            {
+                Log.Error("--root requires --backup <n|latest>.");
+                context.ExitCode = 2;
+                return;
+            }
+            if (!string.IsNullOrEmpty(backup) && string.IsNullOrEmpty(root))
+            {
+                Log.Error("--backup requires --root <path>.");
+                context.ExitCode = 2;
+                return;
+            }
 
             if (string.IsNullOrEmpty(workspace) && string.IsNullOrEmpty(newWorkspace))
             {
@@ -72,6 +107,46 @@ internal static class RestoreCommand
             var fabricApi   = (IFabricApiClient)services.GetService(typeof(IFabricApiClient))!;
             var restoreSvc  = (IRestoreService)services.GetService(typeof(IRestoreService))!;
 
+            // Resolve the backup source path
+            string resolvedSource;
+            if (hasSource)
+            {
+                resolvedSource = source!;
+            }
+            else
+            {
+                var allBackups = await restoreSvc.DiscoverBackupsAsync(root!, ct);
+                if (allBackups.Count == 0)
+                {
+                    Log.Error("No backups found under: {Root}", root);
+                    context.ExitCode = 2;
+                    return;
+                }
+
+                if (backup!.Equals("latest", StringComparison.OrdinalIgnoreCase))
+                {
+                    resolvedSource = allBackups[0].BackupFolderPath;
+                    Log.Information("Selected latest backup: {Workspace} ({Date})",
+                        allBackups[0].Metadata.WorkspaceName,
+                        allBackups[0].Metadata.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"));
+                }
+                else if (int.TryParse(backup, out var idx) && idx >= 1 && idx <= allBackups.Count)
+                {
+                    resolvedSource = allBackups[idx - 1].BackupFolderPath;
+                    Log.Information("Selected backup #{Index}: {Workspace} ({Date})",
+                        idx,
+                        allBackups[idx - 1].Metadata.WorkspaceName,
+                        allBackups[idx - 1].Metadata.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"));
+                }
+                else
+                {
+                    Log.Error("Invalid --backup value '{Value}'. Use a number between 1 and {Max}, or 'latest'.",
+                        backup, allBackups.Count);
+                    context.ExitCode = 2;
+                    return;
+                }
+            }
+
             try
             {
                 string targetId, targetName;
@@ -101,7 +176,7 @@ internal static class RestoreCommand
                     targetName = resolved.Name;
                 }
 
-                var manifestItems = await restoreSvc.LoadManifestItemsAsync(source, ct);
+                var manifestItems = await restoreSvc.LoadManifestItemsAsync(resolvedSource, ct);
 
                 var typeFilter = ParseItemTypes(itemTypes);
                 var toRestore = typeFilter.Count > 0
@@ -117,7 +192,7 @@ internal static class RestoreCommand
                 var progress = new Progress<RestoreProgress>(p =>
                     Log.Information("[{Done}/{Total}] {Item} — {Msg}", p.CompletedItems, p.TotalItems, p.CurrentItem, p.Message));
 
-                var result = await restoreSvc.RestoreItemsAsync(source, targetId, targetName, toRestore, progress, ct);
+                var result = await restoreSvc.RestoreItemsAsync(resolvedSource, targetId, targetName, toRestore, progress, ct);
 
                 foreach (var err in result.Errors)
                     Log.Warning("  {Error}", err);
