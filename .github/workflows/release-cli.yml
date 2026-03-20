@@ -75,12 +75,18 @@ jobs:
             [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Tools\fbl", "User")
             ```
 
+            > Si extraes con el Explorador de Windows, Windows puede mostrar una alerta al ejecutar `fbl.exe`. Para ignorarla: **"Más información" → "Ejecutar de todas formas"**. El código fuente es público en este repositorio.
+
+            ---
+
             **Download `fbl-${{ steps.tag.outputs.value }}-win-x64.zip` and extract with PowerShell** (important: use PowerShell, not Windows Explorer):
 
             ```powershell
             Expand-Archive fbl-${{ steps.tag.outputs.value }}-win-x64.zip -DestinationPath C:\Tools\fbl
             [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Tools\fbl", "User")
             ```
+
+            > If you extract with Windows Explorer, Windows may show a security warning. To bypass it: click **"More info" → "Run anyway"**. Full source code is available in this repository.
 
             ---
 
