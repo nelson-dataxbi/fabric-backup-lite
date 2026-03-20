@@ -130,27 +130,6 @@ fbl backup --all --dest <ruta> [--item-types <tipos>]
 
 ---
 
-### `fbl restore`
-
-```
-fbl restore --source <ruta> --workspace <nombre-o-id>
-fbl restore --source <ruta> --new-workspace <nombre> --capacity <id>
-```
-
-| Opción | Requerida | Descripción |
-|---|---|---|
-| `--source` | Sí | Ruta a la carpeta de backup que contiene `manifest.json` |
-| `--workspace` | Sí (o `--new-workspace`) | Nombre o GUID del workspace destino |
-| `--new-workspace` | Sí (o `--workspace`) | Nombre para crear un nuevo workspace |
-| `--capacity` | Con `--new-workspace` | ID de la capacity de Fabric |
-| `--item-types` | No | Filtra los tipos a restaurar |
-
-**Notas:**
-- Los Warehouses se omiten con advertencia (no son restaurables vía API)
-- 409 Conflict (el item ya existe) → se registra como advertencia y continúa con los items restantes
-
----
-
 ### `fbl list workspaces`
 
 ```
@@ -164,6 +143,59 @@ fbl list workspaces [--output table|json]
 ```
 fbl list items --workspace <nombre-o-id> [--output table|json]
 ```
+
+---
+
+### `fbl list backups`
+
+```
+fbl list backups --root <ruta> [--output table|json]
+```
+
+Descubrirá recursivamente todos los `manifest.json` bajo `--root` y los mostrará ordenados por fecha descendente (el más reciente primero), con un índice numérico utilizable en `fbl restore`.
+
+| Opción | Requerida | Descripción |
+|---|---|---|
+| `--root` | Sí | Carpeta raíz donde buscar backups |
+| `--output` | No | `table` (por defecto) o `json` |
+
+Salida en modo tabla:
+
+```
+#   Workspace                  Fecha                Items
+--  -------------------------  -------------------  -----
+1   Taller_Fabric_2026-03_00   2026-03-20 14:54     16
+2   Taller_Fabric_2026-03_00   2026-03-19 09:12     16
+3   dataXbi                    2026-03-18 17:30       8
+```
+
+---
+
+### `fbl restore`
+
+```
+fbl restore --source <ruta> --workspace <nombre-o-id>
+fbl restore --source <ruta> --new-workspace <nombre> --capacity <id>
+fbl restore --root <ruta> --backup <n|latest> --workspace <nombre-o-id>
+fbl restore --root <ruta> --backup <n|latest> --new-workspace <nombre> --capacity <id>
+```
+
+| Opción | Requerida | Descripción |
+|---|---|---|
+| `--source` | Sí (o `--root`+`--backup`) | Ruta directa a la carpeta de backup que contiene `manifest.json` |
+| `--root` | Sí (con `--backup`) | Carpeta raíz donde buscar backups (misma que `fbl list backups --root`) |
+| `--backup` | Sí (con `--root`) | Índice numérico del backup (del listado de `fbl list backups`) o `latest` para el más reciente |
+| `--workspace` | Sí (o `--new-workspace`) | Nombre o GUID del workspace destino |
+| `--new-workspace` | Sí (o `--workspace`) | Nombre para crear un nuevo workspace |
+| `--capacity` | Con `--new-workspace` | ID de la capacity de Fabric |
+| `--item-types` | No | Filtra los tipos a restaurar |
+
+**Notas:**
+- `--source` y `--root`/`--backup` son mutuamente excluyentes
+- `--backup latest` selecciona el backup más reciente encontrado bajo `--root`
+- `--backup 1` selecciona el primer resultado del listado de `fbl list backups --root <ruta>` (orden descendente por fecha)
+- Los Warehouses se omiten con advertencia (no son restaurables vía API)
+- 409 Conflict (el item ya existe) → se registra como advertencia y continúa con los items restantes
 
 ---
 

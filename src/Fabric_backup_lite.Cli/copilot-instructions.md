@@ -22,7 +22,7 @@ src/
     └── Commands/
         ├── BackupCommand.cs
         ├── RestoreCommand.cs
-        └── ListCommand.cs
+        └── ListCommand.cs           ← list workspaces, list items, list backups
 ```
 
 ---
@@ -73,20 +73,30 @@ fbl backup --all --dest <path> [--item-types <types>]
 Restores artifacts from a local backup folder to a Fabric workspace.
 
 ```bash
+# Ruta directa al backup
 fbl restore --source <path> --workspace <name-or-id>
 fbl restore --source <path> --new-workspace <name> --capacity <id>
+
+# Selección por índice o 'latest' (requiere --root)
+fbl restore --root <path> --backup <n|latest> --workspace <name-or-id>
+fbl restore --root <path> --backup <n|latest> --new-workspace <name> --capacity <id>
 ```
 
 | Option | Required | Description |
 |---|---|---|
-| `--source` | Yes | Path to backup folder (the one containing `manifest.json`). |
+| `--source` | Yes (or `--root`+`--backup`) | Direct path to backup folder (the one containing `manifest.json`). |
+| `--root` | Yes (with `--backup`) | Root folder to discover backups from (same as `fbl list backups --root`). |
+| `--backup` | Yes (with `--root`) | Numeric index from `fbl list backups` output, or `latest` for the most recent backup. |
 | `--workspace` | Yes (or `--new-workspace`) | Target workspace name or GUID. |
 | `--new-workspace` | Yes (or `--workspace`) | Name for a new workspace to create. |
 | `--capacity` | With `--new-workspace` | Fabric capacity ID for the new workspace. |
 | `--item-types` | No | Comma-separated list to filter which types to restore. |
 
 **Behavior:**
-- Reads `manifest.json` from `--source`.
+- `--source` and `--root`/`--backup` are mutually exclusive.
+- `--backup latest` selects the backup at index 1 (newest-first ordering from `DiscoverBackupsAsync`).
+- `--backup <n>` selects the nth result of the same ordered list.
+- Reads `manifest.json` from the resolved backup folder.
 - Warehouses are skipped (non-restorable via API) with a warning message.
 - If an item already exists in the target workspace (409 Conflict), logs a warning and continues.
 
@@ -120,6 +130,37 @@ fbl list items --workspace <name-or-id> [--output table|json]
 |---|---|---|
 | `--workspace` | Yes | Workspace name or GUID. |
 | `--output` | No | `table` (default) or `json`. |
+
+---
+
+### `fbl list backups`
+
+Discovers all backups under a root folder and lists them with a numeric index.
+
+```bash
+fbl list backups --root <path> [--output table|json]
+```
+
+| Option | Required | Description |
+|---|---|---|
+| `--root` | Yes | Root folder to scan recursively for `manifest.json` files. |
+| `--output` | No | `table` (default) or `json`. |
+
+**Behavior:**
+- Uses `RestoreService.DiscoverBackupsAsync()` (already in Core — no new Core code needed).
+- Results are ordered newest-first.
+- The numeric index shown in table output (`#`) is the same index accepted by `fbl restore --backup <n>`.
+
+Table output example:
+```
+#   Workspace                  Date                 Items
+--  -------------------------  -------------------  -----
+1   Taller_Fabric_2026-03_00   2026-03-20 14:54     16
+2   Taller_Fabric_2026-03_00   2026-03-19 09:12     16
+3   dataXbi                    2026-03-18 17:30       8
+```
+
+**Note:** this command does not require authentication — it only reads local files.
 
 ---
 
