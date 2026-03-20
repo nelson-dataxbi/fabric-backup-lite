@@ -90,7 +90,8 @@ internal static class ListCommand
                     var s = summaries[i];
                     Console.WriteLine($"{i + 1,-3}  {s.Meta.WorkspaceName,-30}  {s.Meta.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),-19}  {s.Meta.Items.Count,5}");
                 }
-                Console.WriteLine($"\n{summaries.Count} backup(s) found.");
+                Console.WriteLine();
+                Console.WriteLine($"{summaries.Count} backup(s) found.");
             }
         });
 
