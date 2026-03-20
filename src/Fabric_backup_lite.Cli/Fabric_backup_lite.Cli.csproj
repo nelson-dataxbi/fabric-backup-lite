@@ -6,6 +6,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>fbl</AssemblyName>
     <RootNamespace>Fabric_backup_lite.Cli</RootNamespace>
+
+    <!-- Executable metadata visible in Windows file properties -->
+    <Product>Fabric Backup Lite CLI</Product>
+    <Company>dataxbi</Company>
+    <Description>Command-line interface for Fabric Backup Lite — backup and restore Microsoft Fabric workspaces</Description>
+    <Copyright>Copyright © 2026 Nelson López</Copyright>
+    <ApplicationIcon>fbl.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
@@ -22,6 +29,9 @@
   <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="fbl.ico">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 </Project>
