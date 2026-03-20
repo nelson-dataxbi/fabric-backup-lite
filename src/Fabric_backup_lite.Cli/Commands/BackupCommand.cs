@@ -44,6 +44,12 @@ internal static class BackupCommand
                 context.ExitCode = 2;
                 return;
             }
+            if (all && !string.IsNullOrEmpty(workspace))
+            {
+                Log.Error("Use either --workspace <name-or-id> or --all, not both.");
+                context.ExitCode = 2;
+                return;
+            }
 
             var services    = Program.BuildServices(configuration, auth, clientId, secret, tenant);
             var fabricApi   = (IFabricApiClient)services.GetService(typeof(IFabricApiClient))!;

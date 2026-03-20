@@ -41,20 +41,12 @@ public class AzureCliAuthService : IAuthenticationService
 
         var tokenResult = await _credential.GetTokenAsync(
             new Azure.Core.TokenRequestContext(["https://api.fabric.microsoft.com/.default"]),
-            default);
+            CancellationToken.None);
 
-        var parts = tokenResult.Token.Split('.');
-        if (parts.Length >= 2)
+        if (TryExtractTenantId(tokenResult.Token, out var tenantId))
         {
-            var payload = parts[1];
-            var padded = payload.PadRight(payload.Length + (4 - payload.Length % 4) % 4, '=');
-            var json = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(padded));
-            using var doc = System.Text.Json.JsonDocument.Parse(json);
-            if (doc.RootElement.TryGetProperty("tid", out var tid))
-            {
-                _tenantId = tid.GetString() ?? string.Empty;
-                return _tenantId;
-            }
+            _tenantId = tenantId;
+            return _tenantId;
         }
 
         _logger.LogWarning("Could not extract tenant ID from token; returning empty string.");
@@ -64,4 +56,41 @@ public class AzureCliAuthService : IAuthenticationService
 
     public Task SignInAsync() => Task.CompletedTask;
     public Task SignOutAsync() => Task.CompletedTask;
+
+    private static bool TryExtractTenantId(string jwt, out string tenantId)
+    {
+        tenantId = string.Empty;
+
+        var parts = jwt.Split('.');
+        if (parts.Length < 2)
+            return false;
+
+        try
+        {
+            var payload = parts[1]
+                .Replace('-', '+')
+                .Replace('_', '/');
+            var padded = payload.PadRight(payload.Length + (4 - payload.Length % 4) % 4, '=');
+            var json = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(padded));
+
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("tid", out var tidElement))
+                return false;
+
+            tenantId = tidElement.GetString() ?? string.Empty;
+            return !string.IsNullOrEmpty(tenantId);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return false;
+        }
+    }
 }

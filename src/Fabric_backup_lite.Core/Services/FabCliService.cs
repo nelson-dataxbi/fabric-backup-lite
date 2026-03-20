@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using Microsoft.Extensions.Logging;
 
@@ -51,8 +52,15 @@ public class FabCliService : IFabCliService
             return null;
         }
 
+        if (workspaceName.Contains('"') || itemName.Contains('"') || itemType.Contains('"') || outputDirectory.Contains('"'))
+            throw new InvalidOperationException("fab export arguments contain unsupported quote characters.");
+
         var itemPath  = $"{workspaceName}.Workspace/{itemName}.{itemType}";
-        var arguments = $"export \"{itemPath}\" -o \"{outputDirectory}\" --force";
+        var arguments = string.Format(
+            CultureInfo.InvariantCulture,
+            "export \"{0}\" -o \"{1}\" --force",
+            itemPath,
+            outputDirectory);
 
         _logger.LogInformation("Running: fab {Args}", arguments);
 

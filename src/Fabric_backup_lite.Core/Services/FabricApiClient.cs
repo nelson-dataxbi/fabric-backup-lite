@@ -13,14 +13,15 @@ using Polly.Retry;
 
 namespace Fabric_backup_lite.Core.Services;
 
-public class FabricApiClient : IFabricApiClient
+public class FabricApiClient : IFabricApiClient, IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly IAuthenticationService _authService;
     private readonly ILogger<FabricApiClient> _logger;
     private readonly AsyncRetryPolicy<HttpResponseMessage> _retryPolicy;
     private readonly int _lroPollingInterval;
-    private readonly TimeSpan _lroTimeout = TimeSpan.FromMinutes(5);
+    private readonly TimeSpan _lroTimeout;
+    private bool _disposed;
 
     public FabricApiClient(
         IAuthenticationService authService,
@@ -34,6 +35,7 @@ public class FabricApiClient : IFabricApiClient
         var timeout = configuration.GetValue<int>("Fabric:Timeout", 120);
         var retryAttempts = configuration.GetValue<int>("Fabric:RetryAttempts", 3);
         _lroPollingInterval = configuration.GetValue<int>("Fabric:LROPollingInterval", 2000);
+        _lroTimeout = TimeSpan.FromSeconds(configuration.GetValue<int>("Fabric:LROTimeoutSeconds", 300));
 
         _httpClient = new HttpClient
         {
@@ -528,5 +530,14 @@ public class FabricApiClient : IFabricApiClient
     {
         public string? CreatedItemId { get; set; }
         public string? ItemId        { get; set; }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _httpClient.Dispose();
+        _disposed = true;
     }
 }

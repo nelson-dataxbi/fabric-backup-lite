@@ -47,10 +47,22 @@ internal static class RestoreCommand
                 context.ExitCode = 2;
                 return;
             }
+            if (!string.IsNullOrEmpty(workspace) && !string.IsNullOrEmpty(newWorkspace))
+            {
+                Log.Error("Use either --workspace <name-or-id> or --new-workspace <name>, not both.");
+                context.ExitCode = 2;
+                return;
+            }
 
             if (!string.IsNullOrEmpty(newWorkspace) && string.IsNullOrEmpty(capacity))
             {
                 Log.Error("--new-workspace requires --capacity <id>.");
+                context.ExitCode = 2;
+                return;
+            }
+            if (!string.IsNullOrEmpty(workspace) && !string.IsNullOrEmpty(capacity))
+            {
+                Log.Error("--capacity is only valid with --new-workspace.");
                 context.ExitCode = 2;
                 return;
             }

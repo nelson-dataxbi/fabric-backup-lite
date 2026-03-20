@@ -38,8 +38,8 @@ public class OneLakeDownloadService : IOneLakeDownloadService
             "Starting OneLake download for {Type} '{Name}' ({Id})",
             item.Type, item.DisplayName, item.Id);
 
-        var storageToken = await _authService.GetStorageTokenAsync(cancellationToken);
-        var credential   = new BearerTokenCredential(storageToken);
+        var credential = new RefreshingTokenCredential(
+            ct => _authService.GetStorageTokenAsync(ct));
 
         var serviceUri       = new Uri(OneLakeEndpoint);
         var serviceClient    = new DataLakeServiceClient(serviceUri, credential);
@@ -88,22 +88,21 @@ public class OneLakeDownloadService : IOneLakeDownloadService
     }
 }
 
-/// <summary>
-/// Wraps a pre-obtained bearer token string into the Azure.Core TokenCredential contract.
-/// The expiry is set conservatively to 55 minutes from creation; MSAL will refresh before this.
-/// </summary>
-internal sealed class BearerTokenCredential : TokenCredential
+internal sealed class RefreshingTokenCredential : TokenCredential
 {
-    private readonly AccessToken _token;
+    private readonly Func<CancellationToken, Task<string>> _tokenFactory;
 
-    public BearerTokenCredential(string tokenValue)
+    public RefreshingTokenCredential(Func<CancellationToken, Task<string>> tokenFactory)
     {
-        _token = new AccessToken(tokenValue, DateTimeOffset.UtcNow.AddMinutes(55));
+        _tokenFactory = tokenFactory;
     }
 
     public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
-        => _token;
+        => GetTokenAsync(requestContext, cancellationToken).GetAwaiter().GetResult();
 
-    public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
-        => new ValueTask<AccessToken>(_token);
+    public override async ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+    {
+        var tokenValue = await _tokenFactory(cancellationToken);
+        return new AccessToken(tokenValue, DateTimeOffset.UtcNow.AddMinutes(10));
+    }
 }
