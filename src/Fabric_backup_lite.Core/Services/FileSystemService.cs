@@ -74,10 +74,20 @@ public class FileSystemService
         foreach (var (content, partPath) in parts)
         {
             var fullPath = Path.Combine(itemPath, partPath.Replace('/', Path.DirectorySeparatorChar));
-            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            var dir = Path.GetDirectoryName(fullPath);
+            if (!string.IsNullOrEmpty(dir))
+                Directory.CreateDirectory(dir);
 
             await WaitForFileUnlockedAsync(fullPath, cancellationToken);
-            await File.WriteAllBytesAsync(fullPath, content, cancellationToken);
+            try
+            {
+                await File.WriteAllBytesAsync(fullPath, content, cancellationToken);
+            }
+            catch (IOException ioEx)
+            {
+                _logger.LogError(ioEx, "Failed to write file '{Path}' — it may still be locked", fullPath);
+                throw;
+            }
 
             _logger.LogInformation("Saved {ItemType} '{ItemName}' → {Path}",
                 item.Type, item.DisplayName, fullPath);

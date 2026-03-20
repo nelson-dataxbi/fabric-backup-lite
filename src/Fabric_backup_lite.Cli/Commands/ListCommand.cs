@@ -44,7 +44,7 @@ internal static class ListCommand
             var output   = context.ParseResult.GetValueForOption(outputOption)!;
             var ct       = context.GetCancellationToken();
 
-            var services  = Program.BuildServices(configuration, auth, clientId, secret, tenant);
+            await using var services  = (IAsyncDisposable)Program.BuildServices(configuration, auth, clientId, secret, tenant);
             var fabricApi = (IFabricApiClient)services.GetService(typeof(IFabricApiClient))!;
 
             try
@@ -98,7 +98,7 @@ internal static class ListCommand
             var output    = context.ParseResult.GetValueForOption(outputOption)!;
             var ct        = context.GetCancellationToken();
 
-            var services  = Program.BuildServices(configuration, auth, clientId, secret, tenant);
+            await using var services  = (IAsyncDisposable)Program.BuildServices(configuration, auth, clientId, secret, tenant);
             var fabricApi = (IFabricApiClient)services.GetService(typeof(IFabricApiClient))!;
 
             try

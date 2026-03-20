@@ -342,6 +342,9 @@ public class FabricApiClient : IFabricApiClient, IDisposable
                 var error = status.Error?.Message ?? "Unknown error";
                 throw new Exception($"LRO failed: {error}");
             }
+
+            if (status?.Status != "Running" && status?.Status != "NotStarted")
+                _logger.LogWarning("LRO returned unexpected status '{Status}' — continuing to poll", status?.Status);
         }
     }
 
@@ -374,7 +377,17 @@ public class FabricApiClient : IFabricApiClient, IDisposable
                 continue;
             }
 
-            var bytes    = Convert.FromBase64String(part.Payload);
+            byte[] bytes;
+            try
+            {
+                bytes = Convert.FromBase64String(part.Payload);
+            }
+            catch (FormatException ex)
+            {
+                _logger.LogWarning(ex, "Skipping part '{Path}' — invalid Base64 payload", part.Path);
+                continue;
+            }
+
             var partPath = !string.IsNullOrEmpty(part.Path)
                 ? part.Path
                 : $"definition{GetDefaultExtension(itemType)}";

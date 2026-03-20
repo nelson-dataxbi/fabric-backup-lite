@@ -98,7 +98,11 @@ internal sealed class RefreshingTokenCredential : TokenCredential
     }
 
     public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
-        => GetTokenAsync(requestContext, cancellationToken).GetAwaiter().GetResult();
+    {
+        // Azure SDK calls GetToken in sync paths; we block here intentionally since
+        // OneLake operations always originate from an async context.
+        return GetTokenAsync(requestContext, cancellationToken).GetAwaiter().GetResult();
+    }
 
     public override async ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
     {
